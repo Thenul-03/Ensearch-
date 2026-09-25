@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { enforceOrgIsolation, AuthenticatedRequest } from '../middleware/orgAuth';
-import { syncZohoItems } from '../sync/zohoItemSync';
+import { enforceOrgIsolation, AuthenticatedRequest } from '../middleware/orgAuth.js';
+import { syncZohoItems } from '../sync/zohoItemSync.js';
 
 const router = Router();
 

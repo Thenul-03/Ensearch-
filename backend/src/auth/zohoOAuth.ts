@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { PrismaClient } from '@prisma/client';
-import { encrypt, decrypt } from '../utils/crypto';
+import { encrypt, decrypt } from '../utils/crypto.js';
 
 const prisma = new PrismaClient();
 const SUPPORTED_DOMAINS = new Set(['com', 'in', 'eu']);

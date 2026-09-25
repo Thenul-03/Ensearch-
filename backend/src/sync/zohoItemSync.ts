@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { Prisma, PrismaClient } from '@prisma/client';
-import { getValidAccessToken } from '../auth/zohoOAuth';
+import { getValidAccessToken } from '../auth/zohoOAuth.js';
 
 const prisma = new PrismaClient();
 

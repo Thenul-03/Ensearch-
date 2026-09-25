@@ -31,14 +31,11 @@ export function decrypt(encryptedText: string): string {
     throw new Error('Encrypted text must use the format iv:authTag:ciphertext');
   }
 
-  const [ivHex, authTagHex, encrypted] = parts;
+  const [ivHex, authTagHex, encrypted] = parts as [string, string, string];
   const iv = Buffer.from(ivHex, 'hex');
   const authTag = Buffer.from(authTagHex, 'hex');
 
   const decipher = crypto.createDecipheriv(ALGORITHM, getEncryptionKey(), iv);
   decipher.setAuthTag(authTag);
-  let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-  decrypted += decipher.final('utf8');
-
-  return decrypted;
+  return decipher.update(encrypted, 'hex', 'utf8') + decipher.final('utf8');
 }
