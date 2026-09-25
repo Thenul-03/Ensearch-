@@ -1,13 +1,51 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
-generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
-}
-
 datasource db {
   provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Organization {
+  id               String       @id @default(uuid())
+  zohoOrgId        String       @unique
+  name             String
+  domain           String       @default("com") // e.g., 'com', 'eu', 'in' depending on Zoho data center
+  accessToken      String?      // Plaintext in memory, stored encrypted via application level / pgcrypto
+  refreshToken     String       // Encrypted refresh token
+  tokenExpiresAt   DateTime?
+  lastSyncedAt     DateTime?
+  users            User[]
+  items            ZohoItem[]
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+}
+
+model User {
+  id             String       @id @default(uuid())
+  email          String       @unique
+  passwordHash   String
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model ZohoItem {
+  id             String       @id @default(uuid())
+  zohoItemId     String
+  name           String
+  sku            String?
+  description    String?
+  rate           Float        @default(0.0)
+  status         String       @default("active")
+  rawJson        Json?
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  lastModifiedAt DateTime
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, zohoItemId])
+  @@index([organizationId, name])
 }
