@@ -9,6 +9,7 @@ dotenv.config({ path: path.join(currentDirectory, '../.env') });
 
 const { default: syncRoutes } = await import('./routes/syncRoutes.js');
 const { default: searchRoutes } = await import('./routes/searchRoutes.js');
+const { default: authRoutes } = await import('./routes/authRoutes.js');
 
 const app = express();
 app.use(cors({
@@ -23,6 +24,7 @@ app.get('/', (_req, res) => {
 
 app.use('/api', syncRoutes);
 app.use('/api', searchRoutes);
+app.use('/api', authRoutes);
 
 const port = Number(process.env.PORT ?? 3000);
 

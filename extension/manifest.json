@@ -3,15 +3,27 @@
   "name": "Ensearch for Zoho Books",
   "version": "1.0.0",
   "description": "Intelligent item search and auto-fill for Zoho Books.",
-  "permissions": ["storage", "activeTab"],
+  "permissions": ["storage"],
   "host_permissions": [
     "https://books.zoho.com/*",
     "http://localhost:3000/*",
     "http://127.0.0.1:3000/*"
   ],
+  "action": {
+    "default_title": "Ensearch",
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "src/background/service-worker.ts",
+    "type": "module"
+  },
   "content_scripts": [
     {
-      "matches": ["https://books.zoho.com/*"],
+      "matches": [
+        "https://books.zoho.com/*",
+        "https://books.zoho.in/*",
+        "https://books.zoho.eu/*"
+      ],
       "js": ["src/content.tsx"]
     }
   ]

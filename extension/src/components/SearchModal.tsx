@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { sendMessage } from '../api/client';
 import './SearchModal.css';
 
 export interface SearchResult {
@@ -40,7 +41,6 @@ interface Props {
   position: Position | null;
   onClose: () => void;
   onSelect: (item: SearchResult) => void;
-  authToken?: string | null;
 }
 
 function parseMatches(matches: SearchApiMatch[] | undefined): SearchResult[] {
@@ -78,7 +78,6 @@ export const SearchModal: React.FC<Props> = ({
   position,
   onClose,
   onSelect,
-  authToken,
 }) => {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -91,48 +90,37 @@ export const SearchModal: React.FC<Props> = ({
       return;
     }
 
-    const controller = new AbortController();
+    let cancelled = false;
     const timer = window.setTimeout(async () => {
       setLoading(true);
       setError(null);
       setResults([]);
 
-      try {
-        const headers = new Headers();
-        if (authToken) {
-          headers.set('Authorization', `Bearer ${authToken}`);
-        }
-
-        const response = await fetch(
-          `http://127.0.0.1:3000/api/search?q=${encodeURIComponent(normalizedQuery)}`,
-          { headers, signal: controller.signal }
-        );
-        const data = await response.json() as SearchApiResponse;
-
-        if (!response.ok) {
-          throw new Error(data.error ?? `Search request failed (${response.status})`);
-        }
-
-        const nextResults = parseMatches(data.matches);
-        setResults(nextResults);
-        setActiveIndex(0);
-      } catch (requestError) {
-        if (!controller.signal.aborted) {
-          setResults([]);
-          setError(requestError instanceof Error ? requestError.message : 'Search failed');
-        }
-      } finally {
-        if (!controller.signal.aborted) {
-          setLoading(false);
-        }
+      // The service worker attaches the auth token and calls the backend.
+      const response = await sendMessage<SearchApiResponse>({ type: 'SEARCH', q: normalizedQuery });
+      if (cancelled) {
+        return;
       }
+
+      if (response.ok) {
+        setResults(parseMatches(response.data.matches));
+        setActiveIndex(0);
+      } else {
+        setResults([]);
+        setError(
+          response.code === 'AUTH_REQUIRED'
+            ? 'Sign in from the Ensearch toolbar icon to search.'
+            : response.error
+        );
+      }
+      setLoading(false);
     }, 200);
 
     return () => {
+      cancelled = true;
       window.clearTimeout(timer);
-      controller.abort();
     };
-  }, [authToken, isOpen, query]);
+  }, [isOpen, query]);
 
   const visibleResults = query.trim().length >= 2 ? results : [];
   const visibleError = query.trim().length >= 2 ? error : null;
