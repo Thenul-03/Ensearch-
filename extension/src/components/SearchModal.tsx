@@ -36,8 +36,8 @@ interface Position {
 
 interface Props {
   isOpen: boolean;
-  initialQuery?: string;
-  position?: Position | null;
+  query: string;
+  position: Position | null;
   onClose: () => void;
   onSelect: (item: SearchResult) => void;
   authToken?: string | null;
@@ -74,13 +74,12 @@ function parseMatches(matches: SearchApiMatch[] | undefined): SearchResult[] {
 
 export const SearchModal: React.FC<Props> = ({
   isOpen,
-  initialQuery = '',
-  position = null,
+  query,
+  position,
   onClose,
   onSelect,
   authToken,
 }) => {
-  const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -88,7 +87,7 @@ export const SearchModal: React.FC<Props> = ({
 
   useEffect(() => {
     const normalizedQuery = query.trim();
-    if (!isOpen || !normalizedQuery) {
+    if (!isOpen || normalizedQuery.length < 2) {
       return;
     }
 
@@ -127,7 +126,7 @@ export const SearchModal: React.FC<Props> = ({
           setLoading(false);
         }
       }
-    }, 250);
+    }, 200);
 
     return () => {
       window.clearTimeout(timer);
@@ -135,23 +134,22 @@ export const SearchModal: React.FC<Props> = ({
     };
   }, [authToken, isOpen, query]);
 
-  const visibleResults = query.trim() ? results : [];
-  const visibleError = query.trim() ? error : null;
-  const visibleLoading = isOpen && Boolean(query.trim()) && loading;
+  const visibleResults = query.trim().length >= 2 ? results : [];
+  const visibleError = query.trim().length >= 2 ? error : null;
+  const visibleLoading = isOpen && query.trim().length >= 2 && loading;
 
-  if (!isOpen) {
+  if (!isOpen || !position) {
     return null;
   }
 
-  const modalPosition: React.CSSProperties | undefined = position
-    ? {
-        position: 'fixed',
-        top: position.top,
-        left: position.left,
-        width: position.width,
-        maxHeight: Math.max(120, window.innerHeight - position.top - 12),
-      }
-    : undefined;
+  const modalPosition: React.CSSProperties = {
+    position: 'fixed',
+    top: Math.max(8, Math.min(position.top, window.innerHeight - 288)),
+    left: position.left,
+    width: position.width,
+    maxHeight: Math.max(120, window.innerHeight - position.top - 12),
+    zIndex: 2147483647,
+  };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Escape') {
@@ -171,38 +169,23 @@ export const SearchModal: React.FC<Props> = ({
   };
 
   return (
-    <div className="ensearch-overlay" onClick={onClose} onKeyDown={handleKeyDown}>
+    <div className="ensearch-overlay ensearch-autocomplete-overlay" onClick={onClose} onKeyDown={handleKeyDown}>
       <section
-        aria-label="Search Zoho Books items"
-        aria-modal="true"
-        className={`ensearch-search-modal${position ? ' is-positioned' : ''}`}
+        aria-label={`Search results for ${query}`}
+        aria-live="polite"
+        className="ensearch-search-modal is-positioned"
         style={modalPosition}
         onClick={(event) => event.stopPropagation()}
-        role="dialog"
+        role="listbox"
       >
-        <label className="ensearch-search-label" htmlFor="ensearch-search-input">
-          Item search
-        </label>
-        <input
-          autoFocus
-          id="ensearch-search-input"
-          className="ensearch-search-input"
-          type="search"
-          placeholder="Search by item, alias, or SKU"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          aria-controls="ensearch-search-results"
-          aria-activedescendant={visibleResults[activeIndex] ? `ensearch-result-${activeIndex}` : undefined}
-        />
-
-        <div id="ensearch-search-results" className="ensearch-search-results" role="listbox">
+        <p className="ensearch-autocomplete-heading">
+          Results for “{query.trim().toLocaleUpperCase()}”
+        </p>
+        <div className="ensearch-search-results">
           {visibleLoading && <p className="ensearch-search-message" role="status">Searching...</p>}
           {visibleError && <p className="ensearch-search-message ensearch-search-error" role="alert">{visibleError}</p>}
-          {!visibleLoading && !visibleError && query.trim() && visibleResults.length === 0 && (
+          {!visibleLoading && !visibleError && visibleResults.length === 0 && (
             <p className="ensearch-search-message">No matching items.</p>
-          )}
-          {!query.trim() && (
-            <p className="ensearch-search-message">Start typing to search your catalog.</p>
           )}
           {visibleResults.map((item, index) => (
             <button
@@ -210,13 +193,13 @@ export const SearchModal: React.FC<Props> = ({
               className={`ensearch-result${index === activeIndex ? ' is-active' : ''}`}
               id={`ensearch-result-${index}`}
               key={item.id}
+              role="option"
+              type="button"
               onClick={() => {
                 onSelect(item);
                 onClose();
               }}
               onMouseEnter={() => setActiveIndex(index)}
-              role="option"
-              type="button"
             >
               <span className="ensearch-result-copy">
                 <span className="ensearch-result-name">{item.name}</span>

@@ -31,10 +31,11 @@ const hideZohoNativePopovers = (): (() => void) => {
 
 function ContentApp() {
   const [isOpen, setIsOpen] = useState(false);
-  const [initialQuery, setInitialQuery] = useState('');
+  const [query, setQuery] = useState('');
   const [position, setPosition] = useState<InputPosition | null>(null);
   const zohoInputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
   const restorePopoversRef = useRef<(() => void) | null>(null);
+  const ignoreInputRef = useRef(false);
 
   const closeSearch = () => {
     restorePopoversRef.current?.();
@@ -43,7 +44,55 @@ function ContentApp() {
   };
 
   useEffect(() => {
+    const positionForInput = (target: HTMLInputElement | HTMLTextAreaElement) => {
+      const rect = target.getBoundingClientRect();
+      const width = Math.min(Math.max(rect.width, 450), Math.max(240, window.innerWidth - 24));
+      setPosition({
+        top: rect.bottom + 4,
+        left: Math.max(12, Math.min(rect.left, window.innerWidth - width - 12)),
+        width,
+      });
+    };
+
+    const handleInput = (event: Event) => {
+      if (ignoreInputRef.current) {
+        return;
+      }
+
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement)) {
+        return;
+      }
+      if (target.closest('#ensearch-extension-root')) {
+        return;
+      }
+
+      const row = target.closest('tr, [role="row"], .line-item-row');
+      const nextQuery = target.value.trim();
+      if (!row || nextQuery.length < 2) {
+        setQuery(nextQuery);
+        closeSearch();
+        zohoInputRef.current = null;
+        return;
+      }
+
+      if (!isOpen) {
+        restorePopoversRef.current?.();
+        restorePopoversRef.current = hideZohoNativePopovers();
+      }
+      zohoInputRef.current = target;
+      setQuery(nextQuery);
+      positionForInput(target);
+      setIsOpen(true);
+    };
+
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isOpen) {
+        closeSearch();
+        zohoInputRef.current = null;
+        return;
+      }
+
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault();
         event.stopPropagation();
@@ -59,20 +108,16 @@ function ContentApp() {
         restorePopoversRef.current = hideZohoNativePopovers();
 
         const activeElement = document.activeElement;
-        if (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLTextAreaElement) {
+        if (
+          (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLTextAreaElement) &&
+          activeElement.closest('tr, [role="row"], .line-item-row')
+        ) {
           zohoInputRef.current = activeElement;
-          setInitialQuery(activeElement.value || '');
-
-          const rect = activeElement.getBoundingClientRect();
-          const width = Math.min(Math.max(rect.width, 450), Math.max(240, window.innerWidth - 24));
-          setPosition({
-            top: rect.bottom + 4,
-            left: Math.max(12, Math.min(rect.left, window.innerWidth - width - 12)),
-            width,
-          });
+          setQuery(activeElement.value.trim());
+          positionForInput(activeElement);
         } else {
           zohoInputRef.current = null;
-          setInitialQuery('');
+          setQuery('');
           setPosition(null);
         }
 
@@ -80,8 +125,10 @@ function ContentApp() {
       }
     };
 
+    document.addEventListener('input', handleInput, true);
     window.addEventListener('keydown', handleKeyDown, true);
     return () => {
+      document.removeEventListener('input', handleInput, true);
       window.removeEventListener('keydown', handleKeyDown, true);
       restorePopoversRef.current?.();
       restorePopoversRef.current = null;
@@ -89,14 +136,17 @@ function ContentApp() {
   }, [isOpen]);
 
   const handleSelect = (item: SearchResult) => {
+    ignoreInputRef.current = true;
     injectSelectedItemIntoZoho(item, zohoInputRef.current);
+    window.setTimeout(() => {
+      ignoreInputRef.current = false;
+    }, 0);
   };
 
   return (
     <SearchModal
-      key={`${isOpen}:${initialQuery}`}
       isOpen={isOpen}
-      initialQuery={initialQuery}
+      query={query}
       position={position}
       onClose={closeSearch}
       onSelect={handleSelect}

@@ -12,6 +12,13 @@
   font-family: "Aptos", "Segoe UI", sans-serif;
 }
 
+.ensearch-autocomplete-overlay {
+  display: block;
+  padding: 0;
+  background: transparent;
+  backdrop-filter: none;
+}
+
 .ensearch-search-modal {
   display: flex;
   flex-direction: column;
@@ -23,6 +30,26 @@
   background: #fbfdfb;
   box-shadow: 0 24px 70px rgb(0 0 0 / 28%);
   animation: ensearch-modal-enter 140ms ease-out both;
+}
+
+.ensearch-autocomplete-overlay .ensearch-search-modal {
+  width: min(620px, calc(100vw - 24px));
+  max-height: min(380px, calc(100vh - 16px));
+  border-color: #1684a2;
+  border-radius: 6px;
+  box-shadow: 0 14px 34px rgb(0 0 0 / 24%);
+  animation: none;
+}
+
+.ensearch-autocomplete-heading {
+  margin: 0;
+  padding: 9px 12px;
+  border-bottom: 1px solid #dce5e0;
+  background: #edf5f1;
+  color: #365a4d;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
 .ensearch-search-label {
