@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "Ensearch for Zoho Books",
+  "version": "1.0.0",
+  "description": "Intelligent item search and auto-fill for Zoho Books.",
+  "permissions": ["storage", "activeTab"],
+  "host_permissions": [
+    "https://books.zoho.com/*",
+    "http://localhost:3000/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://books.zoho.com/*"],
+      "js": ["src/content.tsx"]
+    }
+  ]
+}
