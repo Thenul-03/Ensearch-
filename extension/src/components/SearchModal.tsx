@@ -28,9 +28,16 @@ interface SearchApiResponse {
   error?: string;
 }
 
+interface Position {
+  top: number;
+  left: number;
+  width: number;
+}
+
 interface Props {
   isOpen: boolean;
   initialQuery?: string;
+  position?: Position | null;
   onClose: () => void;
   onSelect: (item: SearchResult) => void;
   authToken?: string | null;
@@ -68,6 +75,7 @@ function parseMatches(matches: SearchApiMatch[] | undefined): SearchResult[] {
 export const SearchModal: React.FC<Props> = ({
   isOpen,
   initialQuery = '',
+  position = null,
   onClose,
   onSelect,
   authToken,
@@ -140,6 +148,16 @@ export const SearchModal: React.FC<Props> = ({
     return null;
   }
 
+  const modalPosition: React.CSSProperties | undefined = position
+    ? {
+        position: 'fixed',
+        top: position.top,
+        left: position.left,
+        width: position.width,
+        maxHeight: Math.max(120, window.innerHeight - position.top - 12),
+      }
+    : undefined;
+
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Escape') {
       event.preventDefault();
@@ -162,7 +180,8 @@ export const SearchModal: React.FC<Props> = ({
       <section
         aria-label="Search Zoho Books items"
         aria-modal="true"
-        className="ensearch-search-modal"
+        className={`ensearch-search-modal${position ? ' is-positioned' : ''}`}
+        style={modalPosition}
         onClick={(event) => event.stopPropagation()}
         role="dialog"
       >
