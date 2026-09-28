@@ -87,18 +87,8 @@ export const SearchModal: React.FC<Props> = ({
   const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
-    if (isOpen) {
-      setQuery(initialQuery);
-    }
-  }, [initialQuery, isOpen]);
-
-  useEffect(() => {
     const normalizedQuery = query.trim();
     if (!isOpen || !normalizedQuery) {
-      setResults([]);
-      setLoading(false);
-      setError(null);
-      setActiveIndex(0);
       return;
     }
 
@@ -106,6 +96,7 @@ export const SearchModal: React.FC<Props> = ({
     const timer = window.setTimeout(async () => {
       setLoading(true);
       setError(null);
+      setResults([]);
 
       try {
         const headers = new Headers();
@@ -144,6 +135,10 @@ export const SearchModal: React.FC<Props> = ({
     };
   }, [authToken, isOpen, query]);
 
+  const visibleResults = query.trim() ? results : [];
+  const visibleError = query.trim() ? error : null;
+  const visibleLoading = isOpen && Boolean(query.trim()) && loading;
+
   if (!isOpen) {
     return null;
   }
@@ -162,15 +157,15 @@ export const SearchModal: React.FC<Props> = ({
     if (event.key === 'Escape') {
       event.preventDefault();
       onClose();
-    } else if (event.key === 'ArrowDown' && results.length > 0) {
+    } else if (event.key === 'ArrowDown' && visibleResults.length > 0) {
       event.preventDefault();
-      setActiveIndex((index) => (index + 1) % results.length);
-    } else if (event.key === 'ArrowUp' && results.length > 0) {
+      setActiveIndex((index) => (index + 1) % visibleResults.length);
+    } else if (event.key === 'ArrowUp' && visibleResults.length > 0) {
       event.preventDefault();
-      setActiveIndex((index) => (index - 1 + results.length) % results.length);
-    } else if (event.key === 'Enter' && results[activeIndex]) {
+      setActiveIndex((index) => (index - 1 + visibleResults.length) % visibleResults.length);
+    } else if (event.key === 'Enter' && visibleResults[activeIndex]) {
       event.preventDefault();
-      onSelect(results[activeIndex]);
+      onSelect(visibleResults[activeIndex]);
       onClose();
     }
   };
@@ -197,19 +192,19 @@ export const SearchModal: React.FC<Props> = ({
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           aria-controls="ensearch-search-results"
-          aria-activedescendant={results[activeIndex] ? `ensearch-result-${activeIndex}` : undefined}
+          aria-activedescendant={visibleResults[activeIndex] ? `ensearch-result-${activeIndex}` : undefined}
         />
 
         <div id="ensearch-search-results" className="ensearch-search-results" role="listbox">
-          {loading && <p className="ensearch-search-message" role="status">Searching...</p>}
-          {error && <p className="ensearch-search-message ensearch-search-error" role="alert">{error}</p>}
-          {!loading && !error && query.trim() && results.length === 0 && (
+          {visibleLoading && <p className="ensearch-search-message" role="status">Searching...</p>}
+          {visibleError && <p className="ensearch-search-message ensearch-search-error" role="alert">{visibleError}</p>}
+          {!visibleLoading && !visibleError && query.trim() && visibleResults.length === 0 && (
             <p className="ensearch-search-message">No matching items.</p>
           )}
           {!query.trim() && (
             <p className="ensearch-search-message">Start typing to search your catalog.</p>
           )}
-          {results.map((item, index) => (
+          {visibleResults.map((item, index) => (
             <button
               aria-selected={index === activeIndex}
               className={`ensearch-result${index === activeIndex ? ' is-active' : ''}`}
