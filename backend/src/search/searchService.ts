@@ -20,6 +20,32 @@ export type SearchMatch = {
   matchType: 'exact' | 'alias' | 'partial' | 'fuzzy';
 };
 
+const ALIAS_MAP: Record<string, string[]> = {
+  computer: ['laptop', 'desktop', 'pc', 'system', 'workstation'],
+  laptop: ['computer', 'notebook', 'macbook'],
+  display: ['monitor', 'screen'],
+  mouse: ['pointing device'],
+  memory: ['ram', 'ddr'],
+};
+
+function getAliasTerms(query: string): string[] {
+  const cleanQuery = query.trim().toLocaleLowerCase();
+  const terms = new Set<string>();
+
+  for (const [key, synonyms] of Object.entries(ALIAS_MAP)) {
+    const group = [key, ...synonyms];
+    if (group.some((term) => cleanQuery.includes(term))) {
+      group.forEach((term) => {
+        if (term !== cleanQuery) {
+          terms.add(term);
+        }
+      });
+    }
+  }
+
+  return [...terms];
+}
+
 export async function searchItems(organizationId: string, query: string): Promise<SearchMatch[]> {
   const exactItems = await prisma.zohoItem.findMany({
     where: {
@@ -80,6 +106,28 @@ export async function searchItems(organizationId: string, query: string): Promis
 
     if (aliasMatches.length > 0) {
       return aliasMatches;
+    }
+  }
+
+  const aliasTerms = getAliasTerms(query);
+  if (aliasTerms.length > 0) {
+    const aliasItems = await prisma.zohoItem.findMany({
+      where: {
+        organizationId,
+        status: 'active',
+        OR: aliasTerms.flatMap((term) => [
+          { name: { contains: term, mode: 'insensitive' as const } },
+          { sku: { contains: term, mode: 'insensitive' as const } },
+          { description: { contains: term, mode: 'insensitive' as const } },
+        ]),
+      },
+      select: itemSelect,
+      orderBy: { name: 'asc' },
+      take: MAX_RESULTS,
+    });
+
+    if (aliasItems.length > 0) {
+      return aliasItems.map((item) => ({ item, score: 0.88, matchType: 'alias' }));
     }
   }
 

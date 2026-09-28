@@ -104,7 +104,7 @@ export const SearchModal: React.FC<Props> = ({
         }
 
         const response = await fetch(
-          `http://localhost:3000/api/search?q=${encodeURIComponent(normalizedQuery)}`,
+          `http://127.0.0.1:3000/api/search?q=${encodeURIComponent(normalizedQuery)}`,
           { headers, signal: controller.signal }
         );
         const data = await response.json() as SearchApiResponse;
@@ -169,19 +169,27 @@ export const SearchModal: React.FC<Props> = ({
   };
 
   return (
-    <div className="ensearch-overlay ensearch-autocomplete-overlay" onClick={onClose} onKeyDown={handleKeyDown}>
-      <section
-        aria-label={`Search results for ${query}`}
-        aria-live="polite"
-        className="ensearch-search-modal is-positioned"
-        style={modalPosition}
-        onClick={(event) => event.stopPropagation()}
-        role="listbox"
-      >
-        <p className="ensearch-autocomplete-heading">
-          Results for “{query.trim().toLocaleUpperCase()}”
-        </p>
-        <div className="ensearch-search-results">
+    <>
+      <style>{`
+        .ember-power-select-dropdown,
+        .ac-dropdown,
+        .ember-basic-dropdown-content-placeholder {
+          display: none !important;
+        }
+      `}</style>
+      <div className="ensearch-overlay ensearch-autocomplete-overlay" onClick={onClose} onKeyDown={handleKeyDown}>
+        <section
+          aria-label={`Search results for ${query}`}
+          aria-live="polite"
+          className="ensearch-search-modal is-positioned"
+          style={modalPosition}
+          onClick={(event) => event.stopPropagation()}
+          role="listbox"
+        >
+          <p className="ensearch-autocomplete-heading">
+            Results for “{query.trim().toLocaleUpperCase()}”
+          </p>
+          <div className="ensearch-search-results">
           {visibleLoading && <p className="ensearch-search-message" role="status">Searching...</p>}
           {visibleError && <p className="ensearch-search-message ensearch-search-error" role="alert">{visibleError}</p>}
           {!visibleLoading && !visibleError && visibleResults.length === 0 && (
@@ -212,8 +220,9 @@ export const SearchModal: React.FC<Props> = ({
               <span className="ensearch-result-rate">{item.rate.toFixed(2)}</span>
             </button>
           ))}
-        </div>
-      </section>
-    </div>
+          </div>
+        </section>
+      </div>
+    </>
   );
 };

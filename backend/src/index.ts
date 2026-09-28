@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import cors from 'cors';
 import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -10,6 +11,11 @@ const { default: syncRoutes } = await import('./routes/syncRoutes.js');
 const { default: searchRoutes } = await import('./routes/searchRoutes.js');
 
 const app = express();
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-organization-id'],
+}));
 app.use(express.json());
 app.get('/', (_req, res) => {
   res.send('Ensearch Backend is running!');
