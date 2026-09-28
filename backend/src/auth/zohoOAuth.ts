@@ -1,8 +1,6 @@
 import axios from 'axios';
-import { PrismaClient } from '@prisma/client';
 import { encrypt, decrypt } from '../utils/crypto.js';
-
-const prisma = new PrismaClient();
+import { prisma } from '../db/prisma.js';
 const SUPPORTED_DOMAINS = new Set(['com', 'in', 'eu']);
 const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000;
 

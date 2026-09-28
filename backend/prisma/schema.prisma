@@ -7,18 +7,18 @@ generator client {
 }
 
 model Organization {
-  id               String       @id @default(uuid())
-  zohoOrgId        String       @unique
-  name             String
-  domain           String       @default("com") // e.g., 'com', 'eu', 'in' depending on Zoho data center
-  accessToken      String?      // Plaintext in memory, stored encrypted via application level / pgcrypto
-  refreshToken     String       // Encrypted refresh token
-  tokenExpiresAt   DateTime?
-  lastSyncedAt     DateTime?
-  users            User[]
-  items            ZohoItem[]
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  id             String     @id @default(uuid())
+  zohoOrgId      String     @unique
+  name           String
+  domain         String     @default("com") // e.g., 'com', 'eu', 'in' depending on Zoho data center
+  accessToken    String? // Plaintext in memory, stored encrypted via application level / pgcrypto
+  refreshToken   String // Encrypted refresh token
+  tokenExpiresAt DateTime?
+  lastSyncedAt   DateTime?
+  users          User[]
+  items          ZohoItem[]
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 }
 
 model User {
@@ -42,10 +42,26 @@ model ZohoItem {
   rawJson        Json?
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  aliases        Alias[]      // <--- Back-relation field required here
   lastModifiedAt DateTime
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
   @@unique([organizationId, zohoItemId])
   @@index([organizationId, name])
+}
+
+model Alias {
+  id             String       @id @default(uuid())
+  term           String
+  aliasType      String       @default("synonym")
+  confidence     Float        @default(1.0)
+  status         String       @default("approved")
+  organizationId String
+  itemId         String
+  item           ZohoItem     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId, term])
 }
